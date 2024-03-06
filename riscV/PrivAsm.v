@@ -4,6 +4,8 @@ Require Import Values.
 Require Import Memory.
 Require Import Integers.
 
+Require Import Coq.Logic.FunctionalExtensionality.
+
 (* Augment the above by instructions that are not generated as part of
 CompCert, i.e. machine-state operations like CSR reads and writes. *)
 
@@ -58,22 +60,17 @@ Definition exec_minstr (f: function) (i: minstruction) (rs: mregset) (m: mem) : 
       Next (nextinstr (rs ^# csr <- (rs ## s))) m
   end.
 
-Search outcome.
-Print val.
+Lemma val_add_zero_id : forall i, Val.add (Vint i) (Vint Int.zero) = Vint i.
+Proof.
+  intros. simpl. rewrite Int.add_zero. auto.
+Qed.
 
-Search Int.zero.
-
-Search Val.add.
-
-Print val.
-
-Search Mregmap.set.
-
-(* Theorem nop_is_nop : forall (f: function) (rs: mregset) (m: mem), (exists i, (rs # X1) = Vint i) -> (exec_minstr f (Mins (Paddiw X1 X1 Int.zero)) rs m) = (Next (nextinstr rs) m). *)
-(* Proof. *)
-(*   intros. destruct H. *)
-(*   simpl. unfold Val.add. rewrite H. rewrite Int.add_zero. unfold Pregmap.set. unfold nextinstr. unfold Pregmap.set. *)
-(*   -  *)
-(*   exists (rs ## X1). intros _. unfold exec_minstr. unfold exec_instr. auto. *)
-(*   unfold Val.add. unfold "##".  *)
-(* Qed. *)
+Theorem nop_is_nop : forall (f: function) (rs: mregset) (m: mem), (exists i, (rs # X1) = Vint i) -> (exec_minstr f (Mins (Paddiw X1 X1 Int.zero)) rs m) = (Next (nextinstr rs) m).
+Proof.
+  intros. destruct H. simpl. f_equal. f_equal.
+  pose proof (val_add_zero_id x). rewrite <- H in H0. rewrite H0.
+  unfold Pregmap.set. apply functional_extensionality.
+  intros x'. destruct x'. destruct i; auto.
+  - destruct f0; auto.
+  - auto.
+Qed.
